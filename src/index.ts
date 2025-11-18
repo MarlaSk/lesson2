@@ -64,4 +64,4 @@ function isTwins(num1: number, num2: number): boolean {
 }
 
 console.log(isTwins(123, 321));
-console.log(isTwins(123456789, 987654321));
+console.log(isTwins(123456789, 987654322));
