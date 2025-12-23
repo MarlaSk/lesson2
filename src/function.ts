@@ -1,104 +1,96 @@
-// Снятие наличных
-type CallbackFn = (text: string) => void;
+/*
+Создайте функцию downloadTimeCalculator, которая умеет рассчитывать время в секундах, необходимое для загрузки файла.
+Функция на вход принимает информацию о файле и информацию о скорости скачивания.
 
-type Card = {
-  no: string;
-  pin: number;
-  balance: number;
-  badTries: number;
-  active: boolean;
+--- Система измерений ---
+Для расчётов скорости и/или объёма выделяет две системы - двоичную и десятеричную, мы будем использовать последнюю.
+В десятеричной новая единица измерения означает 1000 предыдущих единиц:
+  * KB = 1000 B
+  * MB = 1000 KB
+  * GB = 1000 MB
+Эти единицы называются байты (B), килобайты (KB), мегабайты (MB), гигабайты (GB)
+
+--- Точность измерений ---
+Точность измерений - 1 секунда, считать миллисекунды не нужно.
+Кол-во секунд округляется наверх, то есть:
+* Если для скачивания нужно 0.00001 сек времени, то ответ должен быть 1 сек.
+* Если для скачивания нужно 1 час 1 минута 30.7349 сек времени, то ответ должен быть 3691 секунд.
+* ℹ️ Дополнительно (необязательно) - переведите секунды в часы, минуты и секунды, и выведите в консоль в человеко-понятном виде
+сколько времени будет скачиваться файл, то есть например не 3691 сек, а "1 час 1 минута 31 секунда"
+
+--- Рекомендация ---
+Не пытайтесь вместить весь алгоритм в одну функцию - код получится похожим на кашу.
+Создавайте столько дополнительных типов и вспомогательных функций, сколько посчитаете нужным.
+
+Например, моё решение потребовало:
+* 3 дополнительных типа
+* 3 дополнительные функции
+
+Да, вы не ошиблись, формулировка "создайте функцию X" разрешает создавать не только X,
+но и любую другую функцию Y, Z, C, D, которая вам может пригодиться.
+
+--- Тесты ---
+Внизу расположены тест-кейсы для проверки работоспособности вашей функции.
+
+В тест-кейсах лежит - файл, скорость, ожидаемый ответ.
+Тест-кейсы по очереди в цикле проверяют, что вызов вашей функции с этим файлом
+и этой скоростью даст ответ, который совпадает с ожидаемым.
+ */
+
+/**
+ * Конкретные тестовые кейсы
+ * Их редактировать запрещено!
+ * Дебажить, конечно же, можно.
+ */
+type Unit = 'gb' | 'kb' | 'b' | 'mb';
+
+type FileInfo = {
+  name: string;
+  size: number;
+  units: Unit;
 };
 
-const red = (text: string) => `\x1b[31m${text}\x1b[0m`;
-const green = (text: string) => `\x1b[32m${text}\x1b[0m`;
-const blue = (text: string) => `\x1b[34m${text}\x1b[0m`;
-const magenta = (text: string) => `\x1b[35m${text}\x1b[0m`;
-
-const database: Card[] = [
-  { no: '4276 1234 5678 9101', pin: 1234, balance: 15000, badTries: 0, active: true },
-  { no: '4214 5678 9101 1121', pin: 5678, balance: 23000, badTries: 0, active: true },
-  { no: '4376 1111 2222 3333', pin: 4321, balance: 5000, badTries: 0, active: true },
-  { no: '4276 4444 5555 6666', pin: 8765, balance: 12000, badTries: 0, active: true },
-  { no: '4214 7777 8888 9999', pin: 1357, balance: 32000, badTries: 0, active: true },
-];
-
-const separator = () => console.log('---');
-
-const logRed: CallbackFn = (msg: string) => {
-  const timestamp = new Date().toISOString().slice(0, 23) + '2';
-  console.log(blue(timestamp), magenta('ERROR'), red(msg));
+type Speed = {
+  speedPerSecond: number;
+  units: Unit;
 };
 
-const logGreen: CallbackFn = (msg: string) => {
-  const timestamp = new Date().toISOString().slice(0, 23) + '2';
-  console.log(blue(timestamp), magenta('INFO'), green(msg));
+const downloadTimeCalculator = (file: FileInfo, speed: Speed) => {
+  const fileSize = convertToBytes(file.size, file.units);
+  const speedSize = convertToBytes(speed.speedPerSecond, speed.units);
+  return fileSize / speedSize;
 };
 
-export const withdraw = (
-  cardNumber: string,
-  pinCode: number,
-  amount: number,
-  successCallback: CallbackFn,
-  errorCallback: CallbackFn,
-) => {
-  const MAX_INCORRECT_ATTEMPTS = 3;
-
-  const card = database.find((c) => c.no === cardNumber);
-
-  if (!card || !card.active) {
-    errorCallback('Карта не обслуживается!');
-    return;
+const convertToBytes = (value: number, unit: Unit) => {
+  if (unit === 'gb') {
+    return value * 1000 ** 3;
+  } else if (unit === 'kb') {
+    return value * 1000;
+  } else if (unit === 'b') {
+    return value;
   }
-
-  if (card.pin !== pinCode) {
-    card.badTries++;
-
-    if (card.badTries >= MAX_INCORRECT_ATTEMPTS) {
-      card.active = false;
-      errorCallback('Карта заблокирована!');
-    } else {
-      errorCallback('PIN неверный!');
-    }
-    return;
-  }
-
-  card.badTries = 0;
-
-  if (card.balance < amount) {
-    errorCallback('Недостаточно средств!');
-    return;
-  }
-
-  card.balance -= amount;
-
-  successCallback(`Снятие наличных ${amount} руб. Баланс: ${card.balance} руб`);
+  return value * 1000 ** 2;
 };
 
-console.log('Проверка на реальное снятие баланса');
-withdraw('4276 1234 5678 9101', 1234, 14000, logGreen, logRed);
-withdraw('4276 1234 5678 9101', 1234, 500, logGreen, logRed);
-withdraw('4276 1234 5678 9101', 1234, 501, logGreen, logRed);
+const testCases = [
+  [10000, { name: 'День рождения.mp4', size: 1, units: 'gb' }, { speedPerSecond: 100, units: 'kb' }],
+  [1024, { name: 'Отчёт.docx', size: 1023443, units: 'kb' }, { speedPerSecond: 1, units: 'mb' }],
+  [1, { name: 'Голосовое сообщение.mp3', size: 1, units: 'b' }, { speedPerSecond: 1000, units: 'gb' }],
+  [86402, { name: 'Корги.png', size: 100.45, units: 'mb' }, { speedPerSecond: 1162.6, units: 'b' }],
+  [100450000000, { name: 'GTA V', size: 100.45, units: 'gb' }, { speedPerSecond: 1, units: 'b' }],
+] as const;
 
-separator();
+/**
+ * Цикл для проверки каждого тест-кейса по очереди
+ */
+for (const testCase of testCases) {
+  const [expected, file, speed] = testCase;
 
-console.log('Проверка на несуществующую карту');
-withdraw('1111 2222 3333 4444', 1234, 501, logGreen, logRed);
+  const result = downloadTimeCalculator(file, speed);
 
-separator();
-
-console.log('Проверка, что карта блокируется после трех неправильных вводов PIN');
-withdraw('4276 4444 5555 6666', 1111, 1, logGreen, logRed);
-withdraw('4276 4444 5555 6666', 1111, 1, logGreen, logRed);
-withdraw('4276 4444 5555 6666', 1111, 1, logGreen, logRed);
-withdraw('4276 4444 5555 6666', 8765, 1, logGreen, logRed);
-
-separator();
-
-console.log('Проверка, что счётчик неправильных попыток сбрасывается после правильного PIN');
-const a = 16000;
-withdraw('4214 7777 8888 9999', 1111, a, logGreen, logRed);
-withdraw('4214 7777 8888 9999', 1111, a, logGreen, logRed);
-withdraw('4214 7777 8888 9999', 1357, a, logGreen, logRed);
-withdraw('4214 7777 8888 9999', 1111, a, logGreen, logRed);
-withdraw('4214 7777 8888 9999', 1111, a, logGreen, logRed);
-withdraw('4214 7777 8888 9999', 1357, a, logGreen, logRed);
+  if (result === expected) {
+    console.log(`Расчеты верны для файла "${file.name}"! \tРезультат: ${result}  | Ожидаемый: ${expected}`);
+  } else {
+    console.log(`Расчеты НЕВЕРНЫ для файла "${file.name}"! \tРезультат: ${result}  | Ожидаемый: ${expected}`);
+  }
+}
