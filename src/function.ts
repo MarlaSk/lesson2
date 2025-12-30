@@ -58,7 +58,15 @@ type Speed = {
 const downloadTimeCalculator = (file: FileInfo, speed: Speed) => {
   const fileSize = convertToBytes(file.size, file.units);
   const speedSize = convertToBytes(speed.speedPerSecond, speed.units);
-  return fileSize / speedSize;
+  const totalTime = Math.ceil(fileSize / speedSize);
+  return formateTime(totalTime);
+};
+
+const formateTime = (totalSeconds: number) => {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = Math.ceil(totalSeconds % 60);
+  return `${hours}:${minutes}:${seconds}`;
 };
 
 const convertToBytes = (value: number, unit: Unit) => {
